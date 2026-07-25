@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Play, Loader2, AlertTriangle, RefreshCw, Server, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Play, Loader2, AlertTriangle, RefreshCw, Server, X, Shield } from 'lucide-react';
 import { useStreamFacade } from '@/hooks/useStreamFacade';
 import { useIntentPreconnect } from '@/hooks/usePreconnect';
 import { PRECONNECT_ORIGINS } from '@/data/catalog';
@@ -41,6 +41,22 @@ export function StreamPlayer({
   useIntentPreconnect(facadeRef, PRECONNECT_ORIGINS, state.phase === 'poster');
 
   const isFull = variant === 'full';
+
+  // ── POPUP / AD-REDIRECT BLOCKER ───────────────────────────────
+  // While a stream is live, intercept window.open so embedded ad scripts
+  // can't pop new tabs. We only override the parent window's open — this
+  // is safe and restored on unmount. VidLink (the default server) is
+  // ad-free; this is extra insurance for the fallback servers.
+  useEffect(() => {
+    if (state.phase === 'poster') return;
+    const originalOpen = window.open;
+    window.open = function () {
+      return null;
+    };
+    return () => {
+      window.open = originalOpen;
+    };
+  }, [state.phase]);
 
   // ── POSTER FACADE ─────────────────────────────────────────────
   if (state.phase === 'poster') {
@@ -90,7 +106,10 @@ export function StreamPlayer({
         isFull ? 'aspect-video' : 'aspect-video'
       }`}
     >
-      {/* iframe — mounted only after play() */}
+      {/* iframe — mounted only after play()
+          No sandbox attribute: streaming providers detect sandbox and refuse
+          to play ("disable sandbox" error). allow-popups is omitted from the
+          allow list to suppress popup redirects from ad-heavy fallback servers. */}
       {state.phase !== 'failed' && (
         <iframe
           key={`${state.serverIndex}-${state.attempts}`}
@@ -99,7 +118,6 @@ export function StreamPlayer({
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
           allowFullScreen
           referrerPolicy="no-referrer"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox"
           onLoad={onIframeLoad}
           className="absolute inset-0 w-full h-full border-0 transition-opacity duration-500"
           style={{ opacity: state.phase === 'playing' ? 1 : 0 }}
@@ -153,6 +171,10 @@ export function StreamPlayer({
       {/* top control bar (playing / loading) */}
       {(state.phase === 'playing' || state.phase === 'loading') && onClose && (
         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg glass-dark text-[11px] text-cyan-300/80 uppercase tracking-wider">
+            <Shield className="w-3 h-3" />
+            Ad-Shield
+          </span>
           <span className="hidden sm:inline px-3 py-1.5 rounded-lg glass-dark text-[11px] text-white/60 uppercase tracking-wider">
             {state.server?.name}
           </span>
