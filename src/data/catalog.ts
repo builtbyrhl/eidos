@@ -1,4 +1,4 @@
-import type { MediaItem } from '@/types';
+import type { MediaItem, StreamServer } from '@/types';
 import { tmdbImage } from '@/lib/tmdb';
 
 // Re-export so existing imports from '@/data/catalog' keep working.
@@ -38,7 +38,7 @@ export const CATALOG: MediaItem[] = [
     genres: ['Drama', 'History', 'Biography'],
     tagline: 'The world forever changes.',
     overview:
-      'The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.',
+      "The story of J. Robert Oppenheimer's role in the development of the atomic bomb during World War II.",
     poster: 'https://image.tmdb.org/t/p/original/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
     backdrop: 'https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg',
     director: 'Christopher Nolan',
@@ -56,7 +56,7 @@ export const CATALOG: MediaItem[] = [
     genres: ['Sci-Fi', 'Drama', 'Adventure'],
     tagline: 'Mankind was born on Earth. It was never meant to die here.',
     overview:
-      'A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival as Earth faces a catastrophic future.',
+      "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival as Earth faces a catastrophic future.",
     poster: 'https://image.tmdb.org/t/p/original/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg',
     backdrop: 'https://image.tmdb.org/t/p/original/1GfWh0hquQCXaZL4f4O3skxu09Y.jpg',
     director: 'Christopher Nolan',
@@ -74,7 +74,7 @@ export const CATALOG: MediaItem[] = [
     genres: ['Sci-Fi', 'Drama', 'Mystery'],
     tagline: 'The key to the future is finally unearthed.',
     overview:
-      'Thirty years after the events of the first film, a new blade runner, LAPD Officer K, unearths a long-buried secret that has the potential to plunge what's left of society into chaos.',
+      "Thirty years after the events of the first film, a new blade runner, LAPD Officer K, unearths a long-buried secret that has the potential to plunge what's left of society into chaos.",
     poster: 'https://image.tmdb.org/t/p/original/gajva2L0rPYkEWjzgFlBXCAVBE5.jpg',
     backdrop: 'https://image.tmdb.org/t/p/original/gNdLJU9TxrpGx4dkZidjys3fyy0.jpg',
     director: 'Denis Villeneuve',
@@ -126,7 +126,7 @@ export const CATALOG: MediaItem[] = [
     voteCount: 6400,
     runtime: 'Series',
     genres: ['Drama', 'Sci-Fi', 'Horror'],
-    tagline: 'When you're lost in the darkness, look for the light.',
+    tagline: "When you're lost in the darkness, look for the light.",
     overview:
       'Twenty years after modern civilization has been destroyed, Joel, a hardened survivor, is hired to smuggle Ellie, a 14-year-old girl, out of an oppressive quarantine zone.',
     poster: 'https://image.tmdb.org/t/p/original/1CqIG3L8bkYaCtRY7HfmKxYFXQ1.jpg',
