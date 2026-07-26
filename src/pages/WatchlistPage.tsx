@@ -3,7 +3,8 @@ import { PosterCard } from '@/components/PosterCard';
 import { GlassCard } from '@/components/GlassCard';
 import { Bookmark, Sparkles } from 'lucide-react';
 import { useWatchlist } from '@/context/WatchlistContext';
-import { CATALOG } from '@/data/catalog';
+import { useCatalogContext } from '@/context/CatalogContext';
+import type { MediaItem } from '@/types';
 
 interface WatchlistPageProps {
   onOpen: (id: string) => void;
@@ -13,9 +14,10 @@ interface WatchlistPageProps {
 
 export function WatchlistPage({ onOpen, onNavigate, current }: WatchlistPageProps) {
   const { entries, loading } = useWatchlist();
+  const { getById } = useCatalogContext();
   const items = entries
-    .map((e) => CATALOG.find((m) => m.id === e.media_id))
-    .filter(Boolean) as typeof CATALOG;
+    .map((e) => getById(e.media_id))
+    .filter(Boolean) as MediaItem[];
 
   return (
     <div className="min-h-screen bg-oled">

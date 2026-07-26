@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { WatchlistProvider } from '@/context/WatchlistContext';
+import { CatalogProvider } from '@/context/CatalogContext';
 import { LandingPage } from '@/pages/LandingPage';
 import { HomePage } from '@/pages/HomePage';
 import { DetailsPage } from '@/pages/DetailsPage';
@@ -37,7 +38,6 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  // scroll to top on view change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [route.view, route.detailId]);
@@ -58,7 +58,6 @@ export default function App() {
       <WatchlistPage onOpen={openDetails} onNavigate={(v) => setHash(v)} current={navCurrent} />
     );
   } else {
-    // home / movies / series all render HomePage with filtered context
     content = (
       <HomePage
         onOpen={openDetails}
@@ -69,5 +68,9 @@ export default function App() {
     );
   }
 
-  return <WatchlistProvider>{content}</WatchlistProvider>;
+  return (
+    <WatchlistProvider>
+      <CatalogProvider>{content}</CatalogProvider>
+    </WatchlistProvider>
+  );
 }

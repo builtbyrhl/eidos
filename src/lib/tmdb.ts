@@ -20,8 +20,6 @@ function authHeaders(): Record<string, string> {
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
   if (accessToken) {
     h['Authorization'] = `Bearer ${accessToken}`;
-  } else if (apiKey) {
-    h['Authorization'] = `Bearer ${apiKey}`;
   }
   return h;
 }
@@ -29,6 +27,9 @@ function authHeaders(): Record<string, string> {
 async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): Promise<T | null> {
   if (!tmdbReady) return null;
   const url = new URL(`${TMDB_BASE}${path}`);
+  if (!accessToken && apiKey) {
+    url.searchParams.set('api_key', apiKey);
+  }
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   try {
     const res = await fetch(url.toString(), { headers: authHeaders() });
@@ -67,6 +68,40 @@ interface TMDBTv {
   poster_path: string;
   backdrop_path: string;
   credits?: { crew: { job: string; name: string }[]; cast: { name: string }[] };
+}
+
+const GENRE_MAP: Record<number, string> = {
+  28: 'Action',
+  12: 'Adventure',
+  16: 'Animation',
+  35: 'Comedy',
+  80: 'Crime',
+  99: 'Documentary',
+  18: 'Drama',
+  10751: 'Family',
+  14: 'Fantasy',
+  36: 'History',
+  27: 'Horror',
+  10402: 'Music',
+  9648: 'Mystery',
+  10749: 'Romance',
+  878: 'Sci-Fi',
+  53: 'Thriller',
+  10752: 'War',
+  37: 'Western',
+  10759: 'Action & Adventure',
+  10762: 'Kids',
+  10763: 'News',
+  10764: 'Reality',
+  10765: 'Sci-Fi & Fantasy',
+  10766: 'Soap',
+  10767: 'Talk',
+  10768: 'War & Politics',
+};
+
+function genresFromIds(ids?: number[]): string[] {
+  if (!ids) return [];
+  return ids.map((id) => GENRE_MAP[id]).filter(Boolean);
 }
 
 function slugify(title: string, id: number): string {
@@ -118,7 +153,6 @@ function tvToItem(t: TMDBTv): MediaItem {
   };
 }
 
-/** Fetch detailed movie data (with credits appended). */
 export async function fetchMovie(id: number): Promise<MediaItem | null> {
   const data = await tmdbFetch<TMDBMovie>(`/movie/${id}`, {
     append_to_response: 'credits',
@@ -126,7 +160,6 @@ export async function fetchMovie(id: number): Promise<MediaItem | null> {
   return data ? movieToItem(data) : null;
 }
 
-/** Fetch detailed TV data (with credits appended). */
 export async function fetchTv(id: number): Promise<MediaItem | null> {
   const data = await tmdbFetch<TMDBTv>(`/tv/${id}`, {
     append_to_response: 'credits',
@@ -138,11 +171,18 @@ interface TMDBListResponse<T> {
   results: T[];
 }
 
-/** Fetch trending movies of the week. */
 export async function fetchTrendingMovies(): Promise<MediaItem[]> {
-  const data = await tmdbFetch<TMDBListResponse<{ id: number; title: string; poster_path: string; backdrop_path: string; vote_average: number; release_date: string }>>(
-    '/trending/movie/week',
-  );
+  const data = await tmdbFetch<TMDBListResponse<{
+    id: number;
+    title: string;
+    poster_path: string;
+    backdrop_path: string;
+    vote_average: number;
+    vote_count: number;
+    release_date: string;
+    overview: string;
+    genre_ids: number[];
+  }>>('/trending/movie/week');
   if (!data?.results) return [];
   return data.results.slice(0, 20).map((m) => ({
     id: slugify(m.title, m.id),
@@ -151,22 +191,29 @@ export async function fetchTrendingMovies(): Promise<MediaItem[]> {
     type: 'movie' as const,
     year: m.release_date ? new Date(m.release_date).getFullYear() : 0,
     rating: Math.round(m.vote_average * 10) / 10,
-    voteCount: 0,
+    voteCount: m.vote_count ?? 0,
     runtime: 'N/A',
-    genres: [],
+    genres: genresFromIds(m.genre_ids),
     tagline: '',
-    overview: '',
+    overview: m.overview ?? '',
     poster: tmdbImage.poster(m.poster_path),
     backdrop: tmdbImage.backdropOriginal(m.backdrop_path),
     cast: [],
   }));
 }
 
-/** Fetch trending TV series of the week. */
 export async function fetchTrendingTv(): Promise<MediaItem[]> {
-  const data = await tmdbFetch<TMDBListResponse<{ id: number; name: string; poster_path: string; backdrop_path: string; vote_average: number; first_air_date: string }>>(
-    '/trending/tv/week',
-  );
+  const data = await tmdbFetch<TMDBListResponse<{
+    id: number;
+    name: string;
+    poster_path: string;
+    backdrop_path: string;
+    vote_average: number;
+    vote_count: number;
+    first_air_date: string;
+    overview: string;
+    genre_ids: number[];
+  }>>('/trending/tv/week');
   if (!data?.results) return [];
   return data.results.slice(0, 20).map((t) => ({
     id: slugify(t.name, t.id),
@@ -175,18 +222,17 @@ export async function fetchTrendingTv(): Promise<MediaItem[]> {
     type: 'tv' as const,
     year: t.first_air_date ? new Date(t.first_air_date).getFullYear() : 0,
     rating: Math.round(t.vote_average * 10) / 10,
-    voteCount: 0,
+    voteCount: t.vote_count ?? 0,
     runtime: 'Series',
-    genres: [],
+    genres: genresFromIds(t.genre_ids),
     tagline: '',
-    overview: '',
+    overview: t.overview ?? '',
     poster: tmdbImage.poster(t.poster_path),
     backdrop: tmdbImage.backdropOriginal(t.backdrop_path),
     cast: [],
   }));
 }
 
-/** Fetch a single item by slug-style id — used by the details page. */
 export async function fetchByTmdbId(
   tmdbId: number,
   type: 'movie' | 'tv',

@@ -2,9 +2,9 @@ import { NavBar } from '@/components/NavBar';
 import { HeroSeries } from '@/components/HeroSeries';
 import { MediaRow } from '@/components/MediaRow';
 import { PosterCard } from '@/components/PosterCard';
-import { CATALOG } from '@/data/catalog';
 import { useWatchlist } from '@/context/WatchlistContext';
-import { useCatalog } from '@/hooks/useCatalog';
+import { useCatalogContext } from '@/context/CatalogContext';
+import type { MediaItem } from '@/types';
 
 interface HomePageProps {
   onOpen: (id: string) => void;
@@ -15,7 +15,7 @@ interface HomePageProps {
 
 export function HomePage({ onOpen, onPlay, onNavigate, current }: HomePageProps) {
   const { entries } = useWatchlist();
-  const { hero, rows, catalog } = useCatalog();
+  const { hero, rows, catalog } = useCatalogContext();
   const myListRow = entries.length
     ? entries.map((e) => catalog.find((m) => m.id === e.media_id)).filter(Boolean)
     : [];
@@ -31,7 +31,7 @@ export function HomePage({ onOpen, onPlay, onNavigate, current }: HomePageProps)
           {myListRow.length > 0 && (
             <MediaRow
               title="My List"
-              items={myListRow as typeof CATALOG}
+              items={myListRow as MediaItem[]}
               onOpen={onOpen}
             />
           )}
@@ -44,7 +44,6 @@ export function HomePage({ onOpen, onPlay, onNavigate, current }: HomePageProps)
             />
           ))}
 
-          {/* featured grid footer */}
           <section className="px-4 sm:px-8 pt-8">
             <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight mb-4">
               Featured Tonight

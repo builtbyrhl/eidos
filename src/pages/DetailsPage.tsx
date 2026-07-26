@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, Star, Plus, Check, Clock, Calendar, Play, Server } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { StreamPlayer } from '@/components/StreamPlayer';
-import { getById, tmdbImage, CATALOG } from '@/data/catalog';
+import { tmdbImage } from '@/data/catalog';
 import { tmdbReady, fetchMovie, fetchTv } from '@/lib/tmdb';
 import { useWatchlist } from '@/context/WatchlistContext';
+import { useCatalogContext } from '@/context/CatalogContext';
 import type { MediaItem } from '@/types';
 
 interface DetailsPageProps {
@@ -13,6 +14,7 @@ interface DetailsPageProps {
 }
 
 export function DetailsPage({ id, onBack }: DetailsPageProps) {
+  const { getById } = useCatalogContext();
   const fallback = getById(id);
   const [item, setItem] = useState<MediaItem | undefined>(fallback);
   const [playing, setPlaying] = useState(false);
@@ -20,17 +22,15 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
   const [episode, setEpisode] = useState(1);
   const { has, toggle } = useWatchlist();
 
-  // Reset on navigation, then try to enrich with live TMDB data.
   useEffect(() => {
     setPlaying(false);
     setSeason(1);
     setEpisode(1);
-    setItem(getById(id));
-
-    if (!tmdbReady) return;
-    let cancelled = false;
     const cur = getById(id);
-    if (!cur) return;
+    setItem(cur);
+
+    if (!tmdbReady || !cur) return;
+    let cancelled = false;
 
     (async () => {
       const live = await (cur.type === 'movie'
@@ -42,7 +42,7 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, getById]);
 
   if (!item) {
     return (
@@ -59,7 +59,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
 
   return (
     <div className="relative min-h-screen bg-oled">
-      {/* immersive backdrop */}
       <div className="fixed inset-0 -z-10">
         <img
           src={backdrop}
@@ -70,7 +69,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-oled/80 via-transparent to-transparent" />
       </div>
 
-      {/* back button */}
       <button
         onClick={onBack}
         className="fixed top-4 left-4 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl glass-dark text-white/80 hover:text-white hover:bg-white/10 transition-all"
@@ -80,7 +78,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
       </button>
 
       <main className="relative px-4 sm:px-8 pt-20 sm:pt-24 pb-16 max-w-6xl mx-auto">
-        {/* title block */}
         <div className="animate-fade-up" style={{ opacity: 0 }}>
           <div className="flex items-center gap-3 mb-3">
             <span className="px-3 py-1 rounded-full glass-strong text-cyan-300 text-xs font-semibold uppercase tracking-widest">
@@ -105,7 +102,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
           </p>
         </div>
 
-        {/* metadata chips */}
         <div
           className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-white/60 animate-fade-up"
           style={{ opacity: 0, animationDelay: '120ms' }}
@@ -122,7 +118,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
           )}
         </div>
 
-        {/* PLAYER + content sheet */}
         <div
           className="mt-8 animate-fade-up"
           style={{ opacity: 0, animationDelay: '200ms' }}
@@ -136,7 +131,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
             />
           ) : (
             <GlassCard variant="dark" className="overflow-hidden">
-              {/* facade preview */}
               <div className="relative aspect-video w-full">
                 <img
                   src={backdrop}
@@ -166,7 +160,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
           )}
         </div>
 
-        {/* season/episode selector for TV */}
         {item.type === 'tv' && !playing && (
           <div
             className="mt-6 flex flex-wrap items-center gap-4 animate-fade-up"
@@ -203,14 +196,12 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
           </div>
         )}
 
-        {/* frosted glass content sheet */}
         <GlassCard
           variant="dark"
           className="mt-6 p-6 sm:p-8 animate-fade-up"
           style={{ opacity: 0, animationDelay: '340ms' }}
         >
           <div className="grid md:grid-cols-3 gap-8">
-            {/* overview */}
             <div className="md:col-span-2">
               <h2 className="text-lg font-semibold text-white mb-3">Overview</h2>
               <p className="text-white/70 leading-relaxed text-sm sm:text-base">
@@ -232,9 +223,7 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
               </div>
             </div>
 
-            {/* actions + score */}
             <div className="space-y-4">
-              {/* score ring */}
               <div className="flex items-center gap-4 glass rounded-xl p-4">
                 <div className="relative w-14 h-14 shrink-0">
                   <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
@@ -270,7 +259,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
                 </div>
               </div>
 
-              {/* watchlist toggle */}
               <button
                 onClick={() =>
                   toggle(item.id, {
@@ -296,7 +284,6 @@ export function DetailsPage({ id, onBack }: DetailsPageProps) {
                 )}
               </button>
 
-              {/* play trigger */}
               <button
                 onClick={() => setPlaying(true)}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition-all duration-300 cyan-glow-strong hover:scale-[1.02] active:scale-95"

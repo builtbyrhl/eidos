@@ -16,11 +16,6 @@ interface CatalogState {
   loading: boolean;
 }
 
-/**
- * Loads the catalog. If a TMDB API key is configured, it fetches live trending
- * data and enriches the curated entries with full details. Otherwise it falls
- * back to the curated static catalog so the app always works.
- */
 export function useCatalog(): CatalogState {
   const [state, setState] = useState<CatalogState>({
     hero: HERO,
@@ -41,20 +36,25 @@ export function useCatalog(): CatalogState {
       ]);
       if (cancelled) return;
 
-      // Enrich the first few trending items with full details (credits etc).
       const enrichedMovies = await Promise.all(
         trendingMovies.slice(0, 6).map((m) => fetchMovie(m.tmdbId)),
       );
       const enrichedTv = await Promise.all(
-        trendingTv.slice(0, 6).map (t => fetchTv(t.tmdbId)),
+        trendingTv.slice(0, 6).map((t) => fetchTv(t.tmdbId)),
       );
 
       if (cancelled) return;
 
       const movies = enrichedMovies.filter(Boolean) as MediaItem[];
       const tv = enrichedTv.filter(Boolean) as MediaItem[];
-      const all = [...movies, ...tv];
-      const liveCatalog = all.length >= 4 ? all : CATALOG;
+
+      const seen = new Set(CATALOG.map((m) => m.tmdbId));
+      const trendingAll = [
+        ...trendingMovies.filter((m) => !seen.has(m.tmdbId)),
+        ...trendingTv.filter((t) => !seen.has(t.tmdbId)),
+      ];
+      const all = [...CATALOG, ...trendingAll];
+      const liveCatalog = trendingAll.length >= 4 ? all : CATALOG;
       const hero = tv[0] ?? movies[0] ?? HERO;
 
       const rows = [
